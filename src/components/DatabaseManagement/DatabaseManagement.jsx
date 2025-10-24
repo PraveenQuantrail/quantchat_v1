@@ -12,6 +12,7 @@ import { connectDBPinggy, databaseApi } from '../../utils/api';
 import { MdKey } from "react-icons/md";
 import { SessionIDContext } from '../../context/SessionIDContext';
 import { TbLoader3 } from "react-icons/tb";
+import { MdAutoDelete } from "react-icons/md";
 
 
 
@@ -44,7 +45,7 @@ export default function DatabaseManagement() {
 
 
 
-  const { sessionIDData, InsertSessionStorage } = useContext(SessionIDContext);
+  const { sessionIDData, InsertSessionStorage,RemoveSessionId } = useContext(SessionIDContext);
 
   // console.log(sessionIDData)
 
@@ -513,9 +514,9 @@ export default function DatabaseManagement() {
 
                       {IsSessionGenerated(conn.id) ?
                         <button
-                          disabled
-                          className='hover:text-purple-800 transition text-[#5d3fd3] cursor-not-allowed'
-                          title='Generated'
+                          onClick={()=>RemoveSessionId(conn.id)}
+                          className='hover:text-purple-800 transition text-[#5d3fd3] cursor-pointer'
+                          title='Delete SessionID'
                         >
                           <FaUserLock />
                         </button>

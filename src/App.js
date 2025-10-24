@@ -9,6 +9,8 @@ import UserManagement from './components/UserManagement/UserManagement';
 import DatabaseManagement from './components/DatabaseManagement/DatabaseManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import AuthRoute from './components/Common/AuthRoute';
+import SessionIDProvider from './context/SessionIDContext';
+
 
 function AppRoutes() {
   const location = useLocation();
@@ -18,23 +20,23 @@ function AppRoutes() {
 
 
 
-  
-  useEffect(()=>{
-    function initmethod(){
+
+  useEffect(() => {
+    function initmethod() {
       try {
         const SESSIONKEY = process.env.REACT_APP_SESSIONID_KEY;
         const isThere = localStorage.getItem(SESSIONKEY);
         if (!isThere) {
-          localStorage.setItem(SESSIONKEY,JSON.stringify([]));
+          localStorage.setItem(SESSIONKEY, JSON.stringify([]));
         }
       }
-      catch(err) {
+      catch (err) {
         throw err;
       }
     }
 
     initmethod()
-  },[])
+  }, [])
 
   return (
     <>
@@ -44,9 +46,9 @@ function AppRoutes() {
           {/* Routes for authenticated users */}
           <Route element={<ProtectedRoute isAllowed={isAuthenticated} />}>
             <Route path="/chat" element={<Chat />} />
-            <Route 
-              path="/user-management" 
-              element={<UserManagement setIsAuthenticated={setIsAuthenticated} />} 
+            <Route
+              path="/user-management"
+              element={<UserManagement setIsAuthenticated={setIsAuthenticated} />}
             />
             <Route path="/database-management" element={<DatabaseManagement />} />
           </Route>
@@ -65,7 +67,7 @@ function AppRoutes() {
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
-          
+
           {/* Catch-all route */}
           <Route
             path="*"
@@ -85,9 +87,12 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router>
-      <AppRoutes />
-    </Router>
+    <SessionIDProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </SessionIDProvider>
+
   );
 }
 

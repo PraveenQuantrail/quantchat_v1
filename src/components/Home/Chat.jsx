@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback,useContext } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSend,
@@ -23,7 +23,7 @@ import { IoTimeOutline } from "react-icons/io5";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { PiLockKeyFill } from "react-icons/pi";
-
+import ImageGallery from "react-image-gallery";
 import { SessionIDContext } from "../../context/SessionIDContext";
 
 const statusColors = {
@@ -118,7 +118,7 @@ const ThinkingAnimation = () => (
 const ChartLoadingAnimation = () => (
   <div className="w-full h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden">
     {/* Animated background */}
-    <motion.div 
+    <motion.div
       className="absolute inset-0 bg-gradient-to-r from-transparent via-[#5D3FD3]/10 to-transparent"
       animate={{
         x: ['-100%', '100%'],
@@ -129,7 +129,7 @@ const ChartLoadingAnimation = () => (
         ease: "easeInOut"
       }}
     />
-    
+
     {/* Main spinner */}
     <motion.div
       className="relative z-10 flex flex-col items-center justify-center"
@@ -144,7 +144,7 @@ const ChartLoadingAnimation = () => (
       >
         <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-[#5D3FD3] rounded-full" />
       </motion.div>
-      
+
       {/* Progress dots */}
       <div className="flex space-x-2 mb-4">
         {[0, 1, 2].map((i) => (
@@ -163,7 +163,7 @@ const ChartLoadingAnimation = () => (
           />
         ))}
       </div>
-      
+
       {/* Loading text with progress */}
       <motion.div
         className="text-sm text-gray-600 font-medium"
@@ -206,39 +206,39 @@ export default function Chat() {
 
   // session id details
   // const [sessionID, setSessionID] = useState([]);
-  const {sessionIDData} = useContext(SessionIDContext);
- 
+  const { sessionIDData } = useContext(SessionIDContext);
+
 
   const [currentSelectedID, setCurrentSelectedID] = useState("");
   const [chartType, setChartType] = useState(["Bar Chart", "Pie Chart", "Line Chart", "Histogram", "Scatter Plot"]);
   const [visualizationInputRefs, setVisualizationInputRefs] = useState({});
 
 
-  
+
 
   const getSessionIDWithDBID = (id) => {
     if (id && sessionIDData) {
       const findValue = sessionIDData.filter(val => val.dbid === Number(id));
       if (findValue.length > 0) {
         setCurrentSelectedID(findValue[0].token);
-      }else {
+      } else {
         setCurrentSelectedID("");
       }
     }
   }
 
 
-  useEffect(()=>{
-    function clearCurrentSessionID(){
-      if (currentSelectedID.length >0) {
+  useEffect(() => {
+    function clearCurrentSessionID() {
+      if (currentSelectedID.length > 0) {
         const findvalue = sessionIDData.filter((val) => val.token === currentSelectedID);
-        if (findvalue.length === 0){
+        if (findvalue.length === 0) {
           setCurrentSelectedID("");
         }
       }
     }
     clearCurrentSessionID();
-  },[sessionIDData])
+  }, [sessionIDData])
 
   // On mount, restore selectedDb from localStorage/sessionStorage for this user
   useEffect(() => {
@@ -340,7 +340,7 @@ export default function Chat() {
             setSelectedDb("");
             const dbKey = getSelectedDbStorageKey();
             sessionStorage.removeItem(dbKey);
-              localStorage.removeItem(dbKey);
+            localStorage.removeItem(dbKey);
           }
         }
       } catch (error) {
@@ -411,7 +411,7 @@ export default function Chat() {
       return responseSQLBOT;
     } catch (err) {
       console.log(err.message + 'error on chating with bot!')
-      return {success:false}
+      return { success: false }
     }
   }
 
@@ -456,15 +456,15 @@ export default function Chat() {
         text: "I understand you're looking for data insights. While I process your specific query, here's an example of what I can do with your data.",
         sql: botapi_response.sql,
         results: botapi_response.data,
-        chartData: { 
-          isloading: false, 
-          image: "", 
+        chartData: {
+          isloading: false,
+          image: "",
           isVisualForm: false, // Changed to false to hide by default
-          question: "", 
-          x_axis: "", 
-          y_axis: "", 
-          charttype: "", 
-          dataColumn: filterColumnsTable 
+          question: "",
+          x_axis: "",
+          y_axis: "",
+          charttype: "",
+          dataColumn: filterColumnsTable
         },
         error: { status: false, message: "" }
       }])
@@ -476,15 +476,15 @@ export default function Chat() {
         text: "",
         sql: "",
         results: "",
-        chartData: { 
-          isloading: false, 
-          image: "", 
+        chartData: {
+          isloading: false,
+          image: "",
           isVisualForm: false, // Changed to false to hide by default
-          question: "", 
-          x_axis: "", 
-          y_axis: "", 
-          charttype: "", 
-          dataColumn: [] 
+          question: "",
+          x_axis: "",
+          y_axis: "",
+          charttype: "",
+          dataColumn: []
         },
         error: { status: true, message: botapi_response.message }
       }])
@@ -570,7 +570,7 @@ export default function Chat() {
           }
           return val
         }));
-      }else {
+      } else {
         setChats(chats.map((val) => {
           if (chat.chatID === val.chatID) {
             return {
@@ -617,11 +617,11 @@ export default function Chat() {
   const OpenChartFormhandle = (chatid) => {
     setChats(chats.map((val) => {
       if (val.type === 'bot' && val.chatID === chatid) {
-        const updatedChat = { 
-          ...val, 
-          chartData: { ...val.chartData, isVisualForm: !val.chartData.isVisualForm } 
+        const updatedChat = {
+          ...val,
+          chartData: { ...val.chartData, isVisualForm: !val.chartData.isVisualForm }
         };
-        
+
         // Focus on input when opening the form
         if (updatedChat.chartData.isVisualForm) {
           setTimeout(() => {
@@ -631,7 +631,7 @@ export default function Chat() {
             }
           }, 100);
         }
-        
+
         return updatedChat;
       }
       return val;
@@ -1008,7 +1008,7 @@ export default function Chat() {
                           <div className="chart-config-select-con w-full flex items-center justify-between gap-3 mb-4">
                             {/* Chart type select container */}
                             <div className="select-charttype flex-1">
-                              <select 
+                              <select
                                 className="font-medium text-gray-700 bg-white border border-gray-300 w-full text-sm h-10 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200"
                                 onChange={(e) => SelectChartType(e, chat.chatID)}
                                 value={chat.chartData.charttype}
@@ -1025,7 +1025,7 @@ export default function Chat() {
                             {/* Select option for x_axis */}
                             <div className="x_axis-con flex-1">
                               {(chat.chartData.charttype !== "Pie Chart" && chat.chartData.charttype !== "") && (
-                                <select 
+                                <select
                                   className="font-medium text-gray-700 bg-white border border-gray-300 w-full text-sm h-10 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200"
                                   onChange={(e) => SelectAxishandler(e, 'x', chat.chatID)}
                                   value={chat.chartData.x_axis}
@@ -1044,7 +1044,7 @@ export default function Chat() {
                             {/* Select option for y_axis */}
                             <div className="y_axis-con flex-1">
                               {(chat.chartData.charttype !== "Pie Chart" && chat.chartData.charttype !== "") && (
-                                <select 
+                                <select
                                   className="font-medium text-gray-700 bg-white border border-gray-300 w-full text-sm h-10 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200"
                                   onChange={(e) => SelectAxishandler(e, 'y', chat.chatID)}
                                   value={chat.chartData.y_axis}
@@ -1089,7 +1089,7 @@ export default function Chat() {
                                 <BarChart3 className="mr-2" size={16} />
                                 Generated Visualization
                               </div>
-                              
+
                               {chat.chartData.isloading ? (
                                 <ChartLoadingAnimation />
                               ) : (
@@ -1098,14 +1098,15 @@ export default function Chat() {
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.4 }}
                                 >
-                                  <LazyLoadImage 
+                                  <LazyLoadImage
                                     effect="opacity" // Changed from "blur" to "opacity" to fix persistent blur
                                     className="w-full rounded-lg border border-gray-200 shadow-sm"
-                                    src={chat.chartData.image} 
+                                    src={chat.chartData.image}
                                     alt="Generated chart visualization"
                                     placeholder={<ChartLoadingAnimation />}
                                     threshold={100} // Load immediately when in viewport
                                   />
+                                  
                                 </motion.div>
                               )}
                             </div>

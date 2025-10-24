@@ -21,6 +21,12 @@ export default function SessionIDProvider({ children }) {
 
     }
 
+    function RemoveSessionId(dbid) {
+        const filterData = JSON.parse(localStorage.getItem(TokenKey)).filter((val) => val.dbid !== dbid);
+        localStorage.setItem(TokenKey,JSON.stringify(filterData));
+        setSessionID(filterData);
+    }
+
     function InitGetSessionIds() {
         setSessionID(JSON.parse(localStorage.getItem(TokenKey)));
     }
@@ -64,7 +70,7 @@ export default function SessionIDProvider({ children }) {
     }, [])
 
     return (
-        <SessionIDContext.Provider value={{ sessionIDData: SessionID,InsertSessionStorage:InsertSessionStorage }}>
+        <SessionIDContext.Provider value={{ sessionIDData: SessionID,InsertSessionStorage:InsertSessionStorage,RemoveSessionId:RemoveSessionId }}>
             {children}
         </SessionIDContext.Provider>
     )
