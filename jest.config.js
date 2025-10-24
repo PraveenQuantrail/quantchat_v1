@@ -1,26 +1,25 @@
 module.exports = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
-  moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
-  },
-  transformIgnorePatterns: [
-    '/node_modules/(?!react-icons|@react-oauth)',
+  testEnvironment: "node",
+  setupFilesAfterEnv: ["./__tests__/setup.js"],
+  coveragePathIgnorePatterns: [
+    "/node_modules/",
+    "/__tests__/"
+  ],
+  roots: ["<rootDir>"],
+  collectCoverageFrom: [
+    "**/*.js",
+    "!**/node_modules/**",
+    "!**/coverage/**",
+    "!**/server.js",
+    "!**/jest.config.js",
+    "!**/__tests__/**"
   ],
   testPathIgnorePatterns: [
-    '/node_modules/',
-    '/build/',
-    '/public/',
+    "/node_modules/",
+    "/config/",
+    "/__tests__/setup.js"
   ],
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/index.js',
-    '!src/serviceWorker.js',
-    '!src/setupTests.js',
-  ],
+  testMatch: [
+    "**/__tests__/**/*.test.js"
+  ]
 };
