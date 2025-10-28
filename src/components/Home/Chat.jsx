@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useCallback, useContext, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSend,
@@ -11,6 +11,17 @@ import {
   FiRefreshCw,
   FiBarChart2,
   FiPieChart,
+  FiX,
+  FiZoomIn,
+  FiDownload,
+  FiRotateCw,
+  FiGrid,
+  FiChevronLeft,
+  FiChevronRight,
+  FiMaximize,
+  FiMinimize,
+  FiMic,
+  FiMicOff,
 } from "react-icons/fi";
 import { FaCircle } from "react-icons/fa";
 import { databaseApi, authApi, ChatWithSQL_API, getSummarizeSQL_API, GetVisualizationSQL_API } from "../../utils/api";
@@ -23,8 +34,13 @@ import { IoTimeOutline } from "react-icons/io5";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { PiLockKeyFill } from "react-icons/pi";
-import ImageGallery from "react-image-gallery";
 import { SessionIDContext } from "../../context/SessionIDContext";
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import useSpeechRecognitionHook from "../../hooks/useSpeechRecognitionHook";
+import useTextSpeechHook from "../../hooks/useTextSpeechHook";
+
+// import { RiSpeakAiFill } from "react-icons/ri";
+import { RiSpeakFill } from "react-icons/ri";
 
 const statusColors = {
   Connected: "text-green-500",
@@ -67,11 +83,6 @@ function getToken() {
 function getSelectedDbStorageKey() {
   let token = getToken();
   return token ? `selectedDb_${token}` : "selectedDb";
-}
-
-function getSessionID() {
-  const sessionsdata = JSON.parse(localStorage.getItem(process.env.REACT_APP_SESSIONID_KEY)) || []
-  return sessionsdata;
 }
 
 const SelectChartStyle = () => `font-medium text-gray-700 bg-white border border-gray-300 w-[90%] text-sm h-9 px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200`
@@ -185,6 +196,449 @@ const ChartLoadingAnimation = () => (
   </div>
 );
 
+// Professional Voice Search Component
+const VoiceSearchButton = ({ onTranscript, disabled }) => {
+  const {
+    hasError,
+    isMIC,
+    listening,
+    StartlisteningHandler,
+    isSupportSpeechRecongnition
+  } = useSpeechRecognitionHook(onTranscript);
+
+  const [showTooltip, setShowTooltip] = useState(false);
+
+
+  if (!isSupportSpeechRecongnition()) {
+    return (
+      <button
+        disabled
+        className="p-2 text-gray-400 cursor-not-allowed"
+        title="Speech recognition not supported in this browser"
+      >
+        <FiMicOff size={18} />
+      </button>
+    );
+  }
+
+  if (isMIC) {
+    return (
+      <button
+        disabled
+        className="p-2 text-gray-400 cursor-not-allowed"
+        title="Microphone not available"
+      >
+        <FiMicOff size={18} />
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <motion.button
+        onClick={StartlisteningHandler}
+        disabled={disabled || hasError}
+        className={`p-2 rounded-full transition-all duration-300 ${listening
+          ? 'text-white bg-[#5D3FD3] border border-[#5D3FD3] shadow-lg'
+          : hasError
+            ? 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+            : 'text-[#5D3FD3] bg-white border border-gray-300 hover:bg-[#5D3FD3] hover:text-white hover:border-[#5D3FD3]'
+          }`}
+        whileHover={!disabled && !hasError ? { scale: 1.05 } : {}}
+        whileTap={!disabled && !hasError ? { scale: 0.95 } : {}}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={hasError ? "Microphone access denied" : listening ? "Stop listening" : "Start voice search"}
+      >
+        <motion.div
+          animate={listening ? {
+            scale: [1, 1.2, 1],
+          } : {}}
+          transition={listening ? {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          } : {}}
+        >
+          {listening ? (
+            <div className="relative">
+              <FiMic size={18} />
+              <motion.div
+                className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full"
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+            </div>
+          ) : (
+            <FiMic size={18} />
+          )}
+        </motion.div>
+      </motion.button>
+
+      {/* Listening Animation */}
+      <AnimatePresence>
+        {listening && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute -top-12 -left-20 transform -translate-x-1/2 bg-[#5D3FD3] text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap z-50"
+          >
+            <div className="flex items-center space-x-2">
+              <div className="flex space-x-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1 h-4 bg-white rounded-full"
+                    animate={{
+                      height: [4, 12, 4],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </div>
+              <span>Listening... Speak now</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tooltip */}
+      <AnimatePresence>
+        {showTooltip && !listening && !hasError && (
+          <motion.div
+            initial={{ opacity: 0, y: 2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className="absolute -top-9 left-[-25px] transform -translate-x-1/2 bg-[#5D3FD3] text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50" // left-1/2 --> left[-25px]  -top-8 ---> -top-9
+          >
+            Voice search
+            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-[#5D3FD3] rotate-45"></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Professional Image Gallery Modal Component
+const ImageGalleryModal = ({ isOpen, onClose, images, startIndex }) => {
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    setCurrentIndex(startIndex);
+    setImageLoaded(false);
+    setZoomLevel(1);
+    setRotation(0);
+  }, [startIndex, isOpen]);
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') {
+        handlePrevious();
+      } else if (e.key === 'ArrowRight') {
+        handleNext();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose, isFullscreen]);
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setImageLoaded(false);
+    setZoomLevel(1);
+    setRotation(0);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setImageLoaded(false);
+    setZoomLevel(1);
+    setRotation(0);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const toggleThumbnails = () => {
+    setShowThumbnails(!showThumbnails);
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+  };
+
+  const handleRotateRight = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
+
+  const handleRotateLeft = () => {
+    setRotation(prev => (prev - 90) % 360);
+  };
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = images[currentIndex];
+    link.download = `quantchat-chart-${currentIndex + 1}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      className={`fixed inset-0 z-50 flex items-center justify-center ${isFullscreen ? 'bg-black' : 'bg-black/90 backdrop-blur-sm'
+        }`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Header Controls */}
+      <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between p-6 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={onClose}
+            className="flex items-center space-x-2 text-white hover:text-gray-300 transition-colors duration-200 p-2 rounded-lg bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+          >
+            <FiX size={20} />
+            <span className="text-sm font-medium">Close</span>
+          </button>
+
+          <div className="flex items-center space-x-1 bg-black/50 rounded-lg p-1 backdrop-blur-sm">
+            <span className="text-white text-sm font-medium px-2">
+              {currentIndex + 1} / {images.length}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={toggleThumbnails}
+            className="p-3 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+            title={showThumbnails ? "Hide thumbnails" : "Show thumbnails"}
+          >
+            <FiGrid size={18} />
+          </button>
+
+          <button
+            onClick={toggleFullscreen}
+            className="p-3 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? <FiMinimize size={18} /> : <FiMaximize size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Image Container */}
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevious}
+              className="absolute left-6 z-30 p-4 text-white hover:text-[#5D3FD3] transition-all duration-200 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm transform hover:scale-110"
+              style={{ left: '2rem' }}
+            >
+              <FiChevronLeft size={24} />
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="absolute right-6 z-30 p-4 text-white hover:text-[#5D3FD3] transition-all duration-200 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm transform hover:scale-110"
+              style={{ right: '2rem' }}
+            >
+              <FiChevronRight size={24} />
+            </button>
+          </>
+        )}
+
+        {/* Image Display */}
+        <div className="relative max-w-5xl max-h-[80vh] flex items-center justify-center">
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 border-4 border-[#5D3FD3]/20 border-t-[#5D3FD3] rounded-full animate-spin" />
+            </div>
+          )}
+
+          <motion.div
+            className={`relative ${imageLoaded ? 'block' : 'invisible'}`}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <img
+              src={images[currentIndex]}
+              alt={`Generated chart visualization ${currentIndex + 1}`}
+              className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+              style={{
+                transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
+                transition: 'transform 0.3s ease'
+              }}
+              onLoad={handleImageLoad}
+            />
+
+            {/* Image Overlay Info */}
+            <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
+              <span className="text-white text-sm font-medium">
+                Chart {currentIndex + 1} of {images.length}
+              </span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom Controls */}
+      <div className="absolute bottom-0 left-0 right-0 z-40 p-6 bg-gradient-to-t from-black/80 to-transparent">
+        <div className="flex items-center justify-between">
+          {/* Thumbnail Strip */}
+          {showThumbnails && images.length > 1 && (
+            <div className="flex-1 flex items-center justify-center space-x-2 max-w-2xl mx-auto">
+              {images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setCurrentIndex(index);
+                    setImageLoaded(false);
+                    setZoomLevel(1);
+                    setRotation(0);
+                  }}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200 transform hover:scale-110 ${index === currentIndex
+                    ? 'border-[#5D3FD3] scale-110 shadow-lg shadow-[#5D3FD3]/30'
+                    : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                >
+                  <img
+                    src={image}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Toolbar */}
+          <div className="flex items-center space-x-2 bg-black/50 rounded-xl p-2 backdrop-blur-sm">
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-1 border-r border-gray-600 pr-2">
+              <button
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 0.5}
+                className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Zoom Out"
+              >
+                <FiZoomIn className="rotate-180" size={18} />
+              </button>
+
+              <span className="text-white text-xs font-medium min-w-[45px] text-center">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+
+              <button
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Zoom In"
+              >
+                <FiZoomIn size={18} />
+              </button>
+
+              <button
+                onClick={handleZoomReset}
+                className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg"
+                title="Reset Zoom"
+              >
+                <FiRefreshCw size={16} />
+              </button>
+            </div>
+
+            {/* Rotation Controls */}
+            <div className="flex items-center space-x-1 border-r border-gray-600 pr-2">
+              <button
+                onClick={handleRotateLeft}
+                className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg"
+                title="Rotate Left"
+              >
+                <FiRotateCw className="rotate-90" size={18} />
+              </button>
+
+              <button
+                onClick={handleRotateRight}
+                className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg"
+                title="Rotate Right"
+              >
+                <FiRotateCw className="-rotate-90" size={18} />
+              </button>
+            </div>
+
+            {/* Download */}
+            <button
+              onClick={handleDownload}
+              className="p-2 text-white hover:text-[#5D3FD3] transition-colors duration-200 rounded-lg"
+              title="Download"
+            >
+              <FiDownload size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Background Overlay Click to Close */}
+      <div
+        className="absolute inset-0 z-0"
+        onClick={onClose}
+      />
+    </motion.div>
+  );
+};
+
 export default function Chat() {
   const [selectedDb, setSelectedDb] = useState("");
   const [dbStatus, setDbStatus] = useState("");
@@ -204,17 +658,26 @@ export default function Chat() {
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [hasShownWelcomeMessage, setHasShownWelcomeMessage] = useState(false);
 
+
+  const [heightTextarea, setHeightTextarea] = useState(40);
+
   // session id details
-  // const [sessionID, setSessionID] = useState([]);
   const { sessionIDData } = useContext(SessionIDContext);
-
-
   const [currentSelectedID, setCurrentSelectedID] = useState("");
   const [chartType, setChartType] = useState(["Bar Chart", "Pie Chart", "Line Chart", "Histogram", "Scatter Plot"]);
   const [visualizationInputRefs, setVisualizationInputRefs] = useState({});
 
 
+  // text to speech init
 
+  const { speaking, stopSpeechHandler, startSpeechHandler } = useTextSpeechHook(1, 1, 1);
+
+  // Image gallery state
+  const [galleryModal, setGalleryModal] = useState({
+    isOpen: false,
+    images: [],
+    startIndex: 0
+  });
 
   const getSessionIDWithDBID = (id) => {
     if (id && sessionIDData) {
@@ -225,8 +688,7 @@ export default function Chat() {
         setCurrentSelectedID("");
       }
     }
-  }
-
+  };
 
   useEffect(() => {
     function clearCurrentSessionID() {
@@ -238,7 +700,16 @@ export default function Chat() {
       }
     }
     clearCurrentSessionID();
-  }, [sessionIDData])
+  }, [sessionIDData, currentSelectedID]);
+
+  // Handle voice transcript
+  const handleVoiceTranscript = useCallback((transcript) => {
+    setMessage(prev => prev + (prev ? ' ' : '') + transcript);
+  }, []);
+
+
+
+
 
   // On mount, restore selectedDb from localStorage/sessionStorage for this user
   useEffect(() => {
@@ -352,7 +823,6 @@ export default function Chat() {
       } finally {
         if (isMounted) {
           setDbLoading(false);
-          // setSessionID(sessionIDData);
           setInitialLoadComplete(true);
         }
       }
@@ -583,6 +1053,27 @@ export default function Chat() {
           }
           return val
         }));
+
+        setChats(prev => [...prev, {
+          chatID: Date.now(),
+          summarize: { value: "", isloading: false },
+          type: "bot",
+          text: "",
+          sql: "",
+          results: "",
+          chartData: {
+            isloading: false,
+            image: "",
+            isVisualForm: false,
+            question: "",
+            x_axis: "",
+            y_axis: "",
+            charttype: "",
+            dataColumn: []
+          },
+          error: { status: true, message: respback.message }
+        }])
+
       }
     }
   }
@@ -692,13 +1183,63 @@ export default function Chat() {
             return val;
           }))
         } else {
-          SetPendingVisual(chatid, false)
+          // SetPendingVisual(chatid, false)
+          setChats(chats.map(val => {
+            if (val.chatID === chatid) {
+              return { ...val, chartData: { ...val.chartData, isloading: false, isVisualForm: false } };
+            }
+            return val;
+          }))
+          setChats(prev => [...prev, {
+            chatID: Date.now(),
+            summarize: { value: "", isloading: false },
+            type: "bot",
+            text: "",
+            sql: "",
+            results: "",
+            chartData: {
+              isloading: false,
+              image: "",
+              isVisualForm: false,
+              question: "",
+              x_axis: "",
+              y_axis: "",
+              charttype: "",
+              dataColumn: []
+            },
+            error: { status: true, message: responseback.message }
+          }])
         }
       }
     } catch (err) {
       console.log(err.message)
     }
   }
+
+  // Open image gallery modal
+  const openImageGallery = (chatIndex, image) => {
+    // Collect all chart images from all chats
+    const allChartImages = chats
+      .filter(chat => chat.chartData?.image)
+      .map(chat => chat.chartData.image);
+
+    const currentImageIndex = allChartImages.indexOf(image);
+
+    setGalleryModal({
+      isOpen: true,
+      images: allChartImages,
+      startIndex: currentImageIndex !== -1 ? currentImageIndex : 0
+    });
+  };
+
+  // Close image gallery modal
+  const closeImageGallery = () => {
+    setGalleryModal({
+      isOpen: false,
+      images: [],
+      startIndex: 0
+    });
+  };
 
   const ErrorStyleChat = (errorFlag) => {
     return errorFlag ? 'bg-red-50 border border-red-100' : ' bg-gray-50 border border-gray-100'
@@ -767,10 +1308,11 @@ export default function Chat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.3 }}
             className="max-w-3xl px-4 py-3 rounded-lg shadow-sm text-sm bg-[#5D3FD3] text-white rounded-br-none relative"
+            style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
           >
             <div className="flex items-center justify-between">
-              <div className="flex-1 pr-4">{chat.text}</div>
-              <div className="bg-white p-1 rounded-full flex-shrink-0">
+              <div className="flex-1 pr-4 break-words whitespace-pre-wrap break-all" style={{ overflowWrap: 'anywhere' }}>{chat.text}</div>
+              <div className="bg-white p-1 rounded-full flex-shrink-0 ml-2">
                 <FiUser className="text-[#5D3FD3]" size={14} />
               </div>
             </div>
@@ -811,6 +1353,7 @@ export default function Chat() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
             className="max-w-3xl px-4 py-3 rounded-lg shadow-sm text-sm bg-yellow-50 border border-yellow-200 rounded-bl-none"
+            style={{ overflowWrap: 'anywhere' }}
           >
             <div className="flex items-center mb-2">
               <div className="bg-yellow-500 p-1 rounded-full mr-2">
@@ -818,7 +1361,7 @@ export default function Chat() {
               </div>
               <span className="text-xs text-yellow-700 font-medium">Database Status</span>
             </div>
-            <div className="mb-3 text-yellow-700">{chat.text}</div>
+            <div className="mb-3 text-yellow-700 break-words whitespace-pre-wrap break-all" style={{ overflowWrap: 'anywhere' }}>{chat.text}</div>
             <div className="flex items-center mt-2">
               <button
                 onClick={checkDbStatus}
@@ -840,6 +1383,7 @@ export default function Chat() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
             className={`max-w-3xl px-4 py-3 rounded-lg shadow-sm text-sm rounded-bl-none ${ErrorStyleChat(chat?.error?.status)}`}
+            style={{ overflowWrap: 'anywhere' }}
           >
             <div className="flex items-center mb-2">
               <div className={chat.text ? "bg-[#5D3FD3] p-1 rounded-full mr-2" : "bg-red-600 p-1 rounded-full mr-2"}>
@@ -849,7 +1393,7 @@ export default function Chat() {
             </div>
 
             {chat.text ?
-              <div className="mb-3 text-gray-700">{chat.text}</div> :
+              <div className="mb-3 text-gray-700 break-words whitespace-pre-wrap break-all" style={{ overflowWrap: 'anywhere' }}>{chat.text}</div> :
 
               chat.error.status && <div>
                 {chat.error.message === 'ISE' && <div className="my-4 flex items-center text-red-600 text-sm">
@@ -867,8 +1411,6 @@ export default function Chat() {
                 {(chat.error.message !== 'SI' && chat.error.message !== 'ISE' && chat.error.message !== 'SNF') && <div className="my-4 flex items-center text-red-600 text-sm">
                   <BiSolidMessageAltError className="w-5 h-5 mr-2" /> Something went wrong on our end. Please try again later.
                 </div>}
-
-                {/* This action requires an active session. Please log in to perform this action */}
               </div>
             }
 
@@ -893,7 +1435,7 @@ export default function Chat() {
                     )}
                   </button>
                 </div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-b-md overflow-x-auto text-xs font-mono">
+                <pre className="bg-gray-900 text-gray-100 p-3 rounded-b-md overflow-x-auto text-xs font-mono break-words whitespace-pre-wrap break-all">
                   {chat.sql}
                 </pre>
               </div>
@@ -911,7 +1453,7 @@ export default function Chat() {
                         {Object.keys(chat.results[0]).map((header, i) => (
                           <th
                             key={i}
-                            className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300 bg-gray-50/80"
+                            className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300 bg-gray-50/80 whitespace-normal break-words"
                           >
                             {header}
                           </th>
@@ -927,7 +1469,8 @@ export default function Chat() {
                           {Object.values(row).map((cell, j) => (
                             <td
                               key={j}
-                              className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap border-b border-gray-200"
+                              className="px-4 py-3 text-sm text-gray-700 whitespace-normal border-b border-gray-200 break-words"
+                              style={{ overflowWrap: 'anywhere' }}
                             >
                               {cell}
                             </td>
@@ -979,11 +1522,24 @@ export default function Chat() {
                       className="mt-3 overflow-hidden"
                     >
                       <div className="bg-blue-50 border border-blue-100 rounded-md p-3 text-sm text-gray-700">
-                        <div className="font-medium text-blue-700 mb-1 flex items-center">
+                        <div className="flex items-center justify-between my-2">
+                          <div className="font-medium text-blue-700 mb-1 flex items-center">
                           <Sparkles className="mr-1" size={14} />
                           Data Summary
                         </div>
-                        {chat.summarize.value}
+                        <motion.div 
+                        title="Read loud"
+                        onClick={()=>{
+                          startSpeechHandler(chat.summarize.value)
+                        }}
+                        className={speaking ? 'text-blue-700 flex items-center justify-between' : 'text-blue-400 hover:text-blue-600 cursor-pointer'}>
+                          {/* <div className="speaking-icon"> */}
+                          <RiSpeakFill className="w-4 h-4 " /> 
+                          {speaking && <span>...</span>}
+                          {/* </div> */}
+                        </motion.div>
+                        </div>
+                        <div className="break-words whitespace-pre-wrap break-all" style={{ overflowWrap: 'anywhere' }}>{chat.summarize.value}</div>
                       </div>
                     </motion.div>
                   )}
@@ -1062,13 +1618,22 @@ export default function Chat() {
                           </div>
 
                           <div className="input-con w-full flex items-center gap-2">
-                            <input
+                            <textarea
                               id={`chart-input-${chat.chatID}`}
                               value={chat?.chartData?.question}
                               onChange={(e) => ChartQuestionQuery(chat.chatID, e)}
                               onKeyDown={(e) => handleChartInputKeyDown(e, chat.chatID)}
-                              className="flex-1 bg-white h-10 rounded-md font-medium text-sm border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200"
+                              className="flex-1 bg-white min-h-[40px] max-h-32 py-2 rounded-md font-medium text-sm border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent transition-all duration-200 resize-y break-words whitespace-pre-wrap break-all"
                               placeholder="Describe the chart you want to generate..."
+                              rows={1}
+                              style={{
+                                resize: 'vertical',
+                                minHeight: '40px',
+                                // maxHeight: '128px',
+                                maxHeight: '300px',
+                                overflowWrap: 'anywhere',
+                                fieldSizing: 'content', // auto adjusting height of textarea
+                              }}
                             />
                             <button
                               onClick={() => handleChartFormSubmit(chat.chatID)}
@@ -1097,16 +1662,23 @@ export default function Chat() {
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.4 }}
+                                  className="relative group cursor-pointer"
+                                  onClick={() => openImageGallery(index, chat.chartData.image)}
                                 >
                                   <LazyLoadImage
-                                    effect="opacity" // Changed from "blur" to "opacity" to fix persistent blur
-                                    className="w-full rounded-lg border border-gray-200 shadow-sm"
+                                    effect="opacity"
+                                    className="w-full rounded-lg border border-gray-200 shadow-sm transition-all duration-300 group-hover:shadow-lg group-hover:scale-[1.02]"
                                     src={chat.chartData.image}
                                     alt="Generated chart visualization"
                                     placeholder={<ChartLoadingAnimation />}
-                                    threshold={100} // Load immediately when in viewport
+                                    threshold={100}
                                   />
-                                  
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg flex items-center space-x-2">
+                                      <FiZoomIn className="text-gray-700" size={16} />
+                                      <span className="text-sm font-medium text-gray-700">Click to expand</span>
+                                    </div>
+                                  </div>
                                 </motion.div>
                               )}
                             </div>
@@ -1144,8 +1716,9 @@ export default function Chat() {
             <select
               value={selectedDb}
               onChange={handleDbSelect}
-              className="bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent rounded px-1 w-48 max-w-[180px] sm:max-w-none"
+              className="bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent rounded px-1 w-48 max-w-[180px] sm:max-w-none truncate"
               disabled={dbLoading}
+              title={databases.find(d => d.id === selectedDb)?.name || "Select Database"}
             >
               <option value="">Select Database</option>
               {databases.map((db) => (
@@ -1228,6 +1801,14 @@ export default function Chat() {
         )}
       </AnimatePresence>
 
+      {/* Image Gallery Modal */}
+      <ImageGalleryModal
+        isOpen={galleryModal.isOpen}
+        onClose={closeImageGallery}
+        images={galleryModal.images}
+        startIndex={galleryModal.startIndex}
+      />
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Chat Messages Area */}
@@ -1273,24 +1854,47 @@ export default function Chat() {
             )}
 
             <div className="flex items-center space-x-2 w-full">
-              <input
-                type="text"
-                placeholder={
-                  !selectedDb
-                    ? "Please select a database to chat."
-                    : editingIndex !== null
-                      ? "Edit your message..."
-                      : "Ask about your data..."
-                }
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent bg-white shadow-xs"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !isBotTyping && handleSend()}
-                disabled={isChatBlocked || isBotTyping}
-              />
+              <div className="flex-1 relative">
+                <textarea
+                  placeholder={
+                    !selectedDb
+                      ? "Please select a database to chat."
+                      : editingIndex !== null
+                        ? "Edit your message..."
+                        : "Ask about your data..."
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5D3FD3] focus:border-transparent bg-white shadow-xs resize-y min-h-[48px] max-h-32 break-words whitespace-pre-wrap break-all pr-12"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !isBotTyping) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  disabled={isChatBlocked || isBotTyping}
+                  rows={1}
+                  style={{
+                    resize: 'vertical',
+                    minHeight: `40px`,
+                    fieldSizing: 'content', // auto adjusting height of textarea
+                    maxHeight: '128px',
+                    overflowWrap: 'anywhere'
+                  }}
+                />
+
+                {/* Voice Search Button */}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <VoiceSearchButton
+                    onTranscript={handleVoiceTranscript}
+                    disabled={isChatBlocked || isBotTyping}
+                  />
+                </div>
+              </div>
+
               <motion.button
                 onClick={handleSend}
-                className="p-3 rounded-lg bg-[#5D3FD3] text-white hover:bg-[#6d4fe4] transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                className="p-3 rounded-lg bg-[#5D3FD3] text-white hover:bg-[#6d4fe4] transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-xs flex-shrink-0"
                 disabled={!message.trim() || isChatBlocked || isBotTyping}
                 whileHover={{ scale: !message.trim() || isChatBlocked || isBotTyping ? 1 : 1.05 }}
                 whileTap={{ scale: !message.trim() || isChatBlocked || isBotTyping ? 1 : 0.95 }}

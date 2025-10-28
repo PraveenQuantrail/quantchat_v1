@@ -607,6 +607,7 @@ export const api_AI = axios.create({
 
 
 
+
 // connecting the db from pinggy
 export const connectDBPinggy = async (dbParam) => {
   try {
@@ -649,8 +650,6 @@ export const connectDBPinggy = async (dbParam) => {
     }
 
 
-
-
     const response = await (await api_AI.post('/api/v1/database/connect', { ...dbcren })).data;
     // console.log(response)
     return response.success ?
@@ -666,7 +665,7 @@ export const connectDBPinggy = async (dbParam) => {
   catch (err) {
     console.log(err)
     console.log("error on connecting db from pinggy!");
-    return {success:false,message:"Not Connected"}
+    return { success: false, message: "Not Connected" }
   }
 }
 
@@ -706,14 +705,12 @@ export const ChatWithSQL_API = async (usermessage, sessionID) => {
         }
 
 
-
-
       } else {
         return { success: false, message: "We have some problem to connect the fastapi" }
       }
-    }else {
+    } else {
       return {
-        success:false,
+        success: false,
         message: "SNF"
       }
     }
@@ -733,6 +730,7 @@ export const ChatWithSQL_API = async (usermessage, sessionID) => {
 }
 
 
+
 export const getSummarizeSQL_API = async (data, sessionID) => {
   try {
 
@@ -748,20 +746,48 @@ export const getSummarizeSQL_API = async (data, sessionID) => {
 
   }
   catch (err) {
-    console.log(err);
-    return { success: false, message: "Something went wrong in getting summarize", summary: "" }
+
+    const errorValue = err?.response?.data.detail;
+
+    if (errorValue === 'Session not found' || errorValue === 'Session expired') {
+      
+      return { success: false, message: "SI", summary: "" }
+    
+    }
+    else if (errorValue === "Internal server error") {
+      
+      return { success: false, message: "ISE", summary: "" }
+    
+    }
+    return { success: false, message: "Something went wrong in getting summarize or Internal Server Error", summary: "" }
   }
 }
 
 
+
+
 export const GetVisualizationSQL_API = async (visualDet) => {
   try {
+
     const response = await (await api_AI.post('/api/v1/visualize/visualize', { ...visualDet })).data;
 
     return { success: true, imageURI: response.chart_image_base64 }
+
   }
   catch (err) {
-    console.log(err)
-    return { success: false, message: "ISE" }
+
+    const errorValue = err?.response?.data.detail;
+
+    if (errorValue === 'Session not found' || errorValue === 'Session expired') {
+    
+      return { success: false, message: "SI" }
+    
+    }
+    else if (errorValue === "Internal server error") {
+
+      return { success: false, message: "ISE" }
+    
+    }
+    return { success: false, message: "Something went wrong in getting summarize or Internal Server Error" }
   }
 }
